@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Application</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.2/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+<body>
+<div>
+    <input type="text" id="username" placeholder="Enter your name">
+    <button onclick="connect()">Join Chat</button>
+</div>
+<div id="chat-box"></div>
+<input type="text" id="message" placeholder="Enter your message">
+<button onclick="sendMessage()">Send</button>
+
+<script>
+    let stompClient = null;
+
+    function connect() {
+        const username = document.getElementById('username').value;
+        const socket = new SockJS('/chat');
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function () {
+            stompClient.subscribe('/topic/public', function (message) {
+                showMessage(JSON.parse(message.body));
+            });
+
+            stompClient.send("/app/newUser", {}, JSON.stringify({sender: username, type: 'JOIN'}));
+        });
+    }
+
+    function sendMessage() {
+        const messageContent = document.getElementById('message').value;
+        stompClient.send("/app/sendMessage", {}, JSON.stringify({content: messageContent, type: 'CHAT'}));
+    }
+
+    function showMessage(message) {
+        const chatBox = document.getElementById('chat-box');
+        chatBox.innerHTML += `<p><b>${message.sender}:</b> ${message.content}</p>`;
+    }
+</script>
+</body>
+</html>
